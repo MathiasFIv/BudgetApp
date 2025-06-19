@@ -46,7 +46,7 @@ namespace BudgetApp
                     case "4":
                         budgetService.SaveToFile(filePath);
                         Console.WriteLine("Goodbye!");
-                        return; // Exit the program
+                        return; 
                     default:
                         Console.WriteLine("Invalid option, try again.");
                         break;
