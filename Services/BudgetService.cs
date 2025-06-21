@@ -1,15 +1,21 @@
 ﻿
 using BudgetApp.DataAccess;
 using BudgetApp.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace BudgetApp.Services;
 
     public class BudgetService
     {
-        private readonly BudgetContext _context = new();
+        private readonly BudgetContext _context;
+
+        public BudgetService(BudgetContext context)
+        {
+            _context = context;
+        }
         
 
-        public void AddTransaction(string description, decimal amount, string category)
+        public async Task AddTransactionAsync(string description, decimal amount, string category)
         {
             if (string.IsNullOrWhiteSpace(description)) 
                 description = "No Description";
@@ -25,20 +31,22 @@ namespace BudgetApp.Services;
             };
 
             _context.Add(transaction);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
-        public List<Transaction> GetAllTransactions()
+        public async Task<List<Transaction>> GetAllTransactionsAsync()
         {
-            return _context.Transactions.OrderByDescending(t => t.Date).ToList();
+            return await _context.Transactions.OrderBy(t => t.Date).ToListAsync();
         }
 
-        public decimal GetCurrentBalance() => _context.Transactions.Sum(t => t.Amount);
-
-
-        public void UpdateTransaction(int id, string newDescription, decimal newAmount, string newCategory)
+        public async Task<decimal> GetCurrentBalanceAsync()
         {
-            var transaction = _context.Transactions.Find(id);
+            return await _context.Transactions.SumAsync(t=> t.Amount);
+        }
+        
+        public async Task  UpdateTransactionAsync(int id, string newDescription, decimal newAmount, string newCategory)
+        {
+            var transaction = await _context.Transactions.FindAsync(id);
             if (transaction != null)
             {
                 transaction.Description = newDescription;
@@ -46,9 +54,8 @@ namespace BudgetApp.Services;
                 transaction.Category = newCategory;
                 transaction.Date = DateTime.Now;
 
-                _context.SaveChanges();
-                Console.WriteLine(
-                    $"Updated {transaction.Description} to {transaction.Amount} to {transaction.Category}");
+               await _context.SaveChangesAsync();
+               Console.WriteLine("Transaction updated successfully!");
             }
             else
             {
@@ -57,15 +64,15 @@ namespace BudgetApp.Services;
         }
 
 
-        public void DeleteTransaction(int id)
+        public async Task DeleteTransactionAsync(int id)
         {
             
-            var transaction = _context.Transactions.Find(id);
+            var transaction = await _context.Transactions.FindAsync(id);
 
             if (transaction != null)
             {
                 _context.Transactions.Remove(transaction);
-                _context.SaveChanges();
+               await  _context.SaveChangesAsync();
                 Console.WriteLine($"Deleted transaction with ID {id}");
             }
             else
@@ -74,11 +81,11 @@ namespace BudgetApp.Services;
             }
         }
         
-        public List<Transaction> FilterByCategory(string category)
+        public async Task<List<Transaction>> FilterByCategory(string category)
         {
-            return _context.Transactions
+            return await _context.Transactions
                 .Where(t => t.Category.ToLower() == category.ToLower())
                 .OrderByDescending(t => t.Date)
-                .ToList();
+                .ToListAsync();
         }
     }

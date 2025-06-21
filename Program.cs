@@ -1,13 +1,24 @@
 ﻿using System;
+using BudgetApp.DataAccess;
 using BudgetApp.Services;
+using Microsoft.EntityFrameworkCore;
 
-namespace BudgetApp
-{
+namespace BudgetApp;
+
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            var budgetService = new BudgetService();
+
+            var options = new DbContextOptionsBuilder<BudgetContext>()
+                .UseSqlite("Data Source=budget.db")
+                .Options;
+
+            using var context = new BudgetContext(options);
+
+            // Now pass context to BudgetService and DbInit
+            var budgetService = new BudgetService(context);
+            DbInit.Initialize(context);
 
             while (true)
             {
@@ -32,19 +43,19 @@ namespace BudgetApp
                 switch (input)
                 {
                     case "1":
-                        AddTransaction(budgetService);
+                        AddTransactionAsync(budgetService);
                         break;
                     case "2":
-                        ViewTransactions(budgetService);
+                        ViewTransactionsAsync(budgetService);
                         break;
                     case "3":
-                        ShowBalance(budgetService);
+                        ShowBalanceAsync(budgetService);
                         break;
                     case "4":
-                        UpdateTransaction(budgetService);
+                        UpdateTransactionAsync(budgetService);
                         break;
                     case "5":
-                        DeleteTransaction(budgetService);
+                        DeleteTransactionAsync(budgetService);
                         break;
                     case "6":
                         Console.WriteLine("Goodbye!");
@@ -58,7 +69,7 @@ namespace BudgetApp
             }
         }
 
-        static void AddTransaction(BudgetService service)
+        static async Task AddTransactionAsync(BudgetService service)
         {
             Console.Write("Enter Description: ");
             string? descriptionInput = Console.ReadLine();
@@ -76,13 +87,13 @@ namespace BudgetApp
             string? categoryInput = Console.ReadLine();
             string category = string.IsNullOrEmpty(categoryInput) ? "Uncategorized" : categoryInput;
 
-            service.AddTransaction(description, amount, category);
+            service.AddTransactionAsync(description, amount, category);
             Console.WriteLine("Transaction added successfully.");
         }
 
-        static void ViewTransactions(BudgetService service)
+        static async Task ViewTransactionsAsync(BudgetService service)
         {
-            var transactions = service.GetAllTransactions();
+            var transactions = await service.GetAllTransactionsAsync();
 
             if (transactions.Count == 0)
             {
@@ -97,13 +108,13 @@ namespace BudgetApp
             }
         }
 
-        static void ShowBalance(BudgetService service)
+        static async Task ShowBalanceAsync(BudgetService service)
         {
-            decimal balance = service.GetCurrentBalance();
+            decimal balance = await service.GetCurrentBalanceAsync();
             Console.WriteLine($"Current Balance: {balance:C}");
         }
 
-        static void UpdateTransaction(BudgetService service)
+        static async Task UpdateTransactionAsync(BudgetService service)
         {
             Console.Write("Enter the Transaction ID to update: ");
             if (!int.TryParse(Console.ReadLine(), out int id))
@@ -125,10 +136,10 @@ namespace BudgetApp
             Console.Write("New Category: ");
             string? newCategory = Console.ReadLine();
 
-            service.UpdateTransaction(id, newDescription, newAmount, newCategory);
+           await  service.UpdateTransactionAsync(id, newDescription, newAmount, newCategory);
         }
 
-        static void DeleteTransaction(BudgetService service)
+        static async Task DeleteTransactionAsync(BudgetService service)
         {
             Console.Write("Enter the Transaction ID to delete: ");
             if (!int.TryParse(Console.ReadLine(), out int id))
@@ -137,7 +148,6 @@ namespace BudgetApp
                 return;
             }
 
-            service.DeleteTransaction(id);
+            await service.DeleteTransactionAsync(id);
         }
     }
-}
