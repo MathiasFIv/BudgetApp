@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection.Metadata.Ecma335;
 using BudgetApp.Services;
 
 namespace BudgetApp
@@ -9,9 +8,6 @@ namespace BudgetApp
         static void Main(string[] args)
         {
             var budgetService = new BudgetService();
-            string filePath = "transactions.json";
-            
-            budgetService.LoadFromFile(filePath);
 
             while (true)
             {
@@ -20,10 +16,11 @@ namespace BudgetApp
                 Console.WriteLine("1. Add Transaction");
                 Console.WriteLine("2. View Transactions");
                 Console.WriteLine("3. Show Balance");
-                Console.WriteLine("4. Exit");
+                Console.WriteLine("4. Update Transaction");
+                Console.WriteLine("5. Delete Transaction");
+                Console.WriteLine("6. Exit");
                 Console.Write("Choose an option: ");
 
-                
                 string? input = Console.ReadLine();
                 if (string.IsNullOrEmpty(input))
                 {
@@ -44,15 +41,20 @@ namespace BudgetApp
                         ShowBalance(budgetService);
                         break;
                     case "4":
-                        budgetService.SaveToFile(filePath);
+                        UpdateTransaction(budgetService);
+                        break;
+                    case "5":
+                        DeleteTransaction(budgetService);
+                        break;
+                    case "6":
                         Console.WriteLine("Goodbye!");
-                        return; 
+                        return;
                     default:
                         Console.WriteLine("Invalid option, try again.");
                         break;
                 }
 
-                Console.WriteLine(); // Blank line for spacing between actions
+                Console.WriteLine(); // Blank line for spacing
             }
         }
 
@@ -61,20 +63,19 @@ namespace BudgetApp
             Console.Write("Enter Description: ");
             string? descriptionInput = Console.ReadLine();
             string description = string.IsNullOrEmpty(descriptionInput) ? "No Description" : descriptionInput;
-            
 
             Console.Write("Amount: ");
             string? amountInput = Console.ReadLine();
             if (!decimal.TryParse(amountInput, out decimal amount))
             {
-                Console.WriteLine("Invalid amount. Transaction Cancelled.");
+                Console.WriteLine("Invalid amount. Transaction cancelled.");
                 return;
             }
-            
+
             Console.Write("Category: ");
             string? categoryInput = Console.ReadLine();
             string category = string.IsNullOrEmpty(categoryInput) ? "Uncategorized" : categoryInput;
-            
+
             service.AddTransaction(description, amount, category);
             Console.WriteLine("Transaction added successfully.");
         }
@@ -88,11 +89,11 @@ namespace BudgetApp
                 Console.WriteLine("No transactions recorded yet...");
                 return;
             }
-            
-            Console.WriteLine("Transactions");
+
+            Console.WriteLine("Transactions:");
             foreach (var t in transactions)
             {
-                Console.WriteLine(t);
+                Console.WriteLine($"ID: {t.Id} | {t.Date:yyyy-MM-dd HH:mm} | {t.Description} | {t.Category} | {t.Amount:C}");
             }
         }
 
@@ -100,6 +101,43 @@ namespace BudgetApp
         {
             decimal balance = service.GetCurrentBalance();
             Console.WriteLine($"Current Balance: {balance:C}");
+        }
+
+        static void UpdateTransaction(BudgetService service)
+        {
+            Console.Write("Enter the Transaction ID to update: ");
+            if (!int.TryParse(Console.ReadLine(), out int id))
+            {
+                Console.WriteLine("Invalid ID - Transaction not found!");
+                return;
+            }
+
+            Console.Write("New Description: ");
+            string? newDescription = Console.ReadLine();
+
+            Console.Write("New Amount: ");
+            if (!decimal.TryParse(Console.ReadLine(), out decimal newAmount))
+            {
+                Console.WriteLine("Invalid amount. Transaction cancelled.");
+                return;
+            }
+
+            Console.Write("New Category: ");
+            string? newCategory = Console.ReadLine();
+
+            service.UpdateTransaction(id, newDescription, newAmount, newCategory);
+        }
+
+        static void DeleteTransaction(BudgetService service)
+        {
+            Console.Write("Enter the Transaction ID to delete: ");
+            if (!int.TryParse(Console.ReadLine(), out int id))
+            {
+                Console.WriteLine("Invalid ID - Transaction not found!");
+                return;
+            }
+
+            service.DeleteTransaction(id);
         }
     }
 }
